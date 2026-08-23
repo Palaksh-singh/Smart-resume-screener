@@ -44,37 +44,37 @@ required), keeping the project runnable end-to-end at zero cost.
 ## 2. Architecture
 
 ```
-                        ┌────────────────────────┐
+                        ┌──────────────────────────┐
                         │   React Dashboard        │
                         │   (Vite, port 5173)      │
                         │                          │
                         │  IntakePanel → uploads   │
-                        │  ResultsPanel → shortlist │
+                        │  ResultsPanel → shortlist│
                         └───────────┬──────────────┘
                                     │ REST (fetch, JSON)
                                     ▼
-                        ┌────────────────────────┐
-                        │  Express API (Node.js)  │
-                        │      (port 5000)        │
-                        │                          │
-                        │  /api/resumes  (POST/GET/DELETE)
-                        │  /api/jobs     (POST/GET)
-                        │  /api/match/:jobId (POST/GET)
-                        └───┬────────────┬─────────┘
+                      ┌────────────────────────────────┐
+                      │     Express API (Node.js)      │
+                      │          (port 5000)           │
+                      │                                │
+                      │ /api/resumes  (POST/GET/DELETE)│
+                      │ /api/jobs     (POST/GET)       │
+                      │ /api/match/:jobId (POST/GET)   │
+                      └─────┬────────────┬─────────────┘
                             │            │
-             ┌──────────────┘            └───────────────┐
+             ┌──────────────┘            └────────────────┐
              ▼                                            ▼
    ┌───────────────────┐                       ┌────────────────────────┐
-   │  pdf-parse         │                       │  Groq API               │
-   │  (text extraction) │                       │  (extraction + scoring) │
+   │  pdf-parse        │                       │  Groq API              │
+   │  (text extraction)│                       │  (extraction + scoring)│
    └───────────────────┘                       └────────────────────────┘
              │                                            │
              └───────────────────┬────────────────────────┘
                                   ▼
                         ┌────────────────────────┐
-                        │  lowdb (JSON file)      │
-                        │  candidates / jobs /     │
-                        │  matches collections     │
+                        │  lowdb (JSON file)     │
+                        │  candidates / jobs /   │
+                        │  matches collections   │
                         └────────────────────────┘
 ```
 
@@ -200,16 +200,16 @@ Open `http://localhost:5173`, paste a job description, upload one or more resume
 
 ### API reference
 
-| Method | Route              | Description                                   |
-|--------|--------------------|------------------------------------------------|
-| GET    | `/api/health`       | Server + LLM-configuration status              |
+| Method | Route                | Description                                      |
+|--------|----------------------|--------------------------------------------------|
+| GET    | `/api/health`        | Server + LLM-configuration status                |
 | POST   | `/api/resumes`       | Upload a resume (`multipart/form-data`, field `resume`) |
-| GET    | `/api/resumes`       | List parsed candidates                         |
-| DELETE | `/api/resumes/:id`   | Remove a candidate                              |
-| POST   | `/api/jobs`           | Create a job description `{ title, description }` |
-| GET    | `/api/jobs`           | List job descriptions                           |
-| POST   | `/api/match/:jobId`   | Score candidates against a job (optional `{ candidateIds }`) |
-| GET    | `/api/match/:jobId`   | Fetch stored match results for a job, ranked    |
+| GET    | `/api/resumes`       | List parsed candidates                           |
+| DELETE | `/api/resumes/:id`   | Remove a candidate                               |
+| POST   | `/api/jobs`          | Create a job description `{ title, description }`|
+| GET    | `/api/jobs`          | List job descriptions                            |
+| POST   | `/api/match/:jobId`  | Score candidates against a job (optional `{ candidateIds }`) |
+| GET    | `/api/match/:jobId`  | Fetch stored match results for a job, ranked     |
 
 **Example: score candidates via curl** (create a job and upload a candidate first):
 
