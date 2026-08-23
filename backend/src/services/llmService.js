@@ -1,13 +1,7 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { config, isLlmConfigured } from '../config.js';
 
-let client = null;
-function getClient() {
-  if (!client) {
-    client = new Anthropic({ apiKey: config.anthropicApiKey });
-  }
-  return client;
-}
+const GEMINI_ENDPOINT = (model) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
 /**
  * Strips markdown code fences etc. in case the model wraps its JSON.
@@ -20,6 +14,37 @@ function safeParseJson(text) {
     .replace(/```\s*$/i, '')
     .trim();
   return JSON.parse(cleaned);
+}
+
+/**
+ * Low-level call to the Gemini API. Sends a system instruction + one user
+ * message, and asks for JSON-only output via responseMimeType.
+ */
+async function callGemini(systemPrompt, userContent) {
+  const res = await fetch(`${GEMINI_ENDPOINT(config.llmModel)}?key=${config.geminiApiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: 'user', parts: [{ text: userContent }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.2,
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Gemini API error (${res.status}): ${errBody}`);
+  }
+
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    throw new Error('Gemini API returned no text content.');
+  }
+  return text;
 }
 
 /**
@@ -55,22 +80,13 @@ export async function extractStructuredResume(resumeText) {
     return mockExtraction(resumeText);
   }
 
-  const anthropic = getClient();
-  const response = await anthropic.messages.create({
-    model: config.llmModel,
-    max_tokens: 1500,
-    system: EXTRACTION_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: 'user',
-        content: `Resume text:\n"""\n${resumeText.slice(0, 12000)}\n"""`,
-      },
-    ],
-  });
+  const text = await callGemini(
+    EXTRACTION_SYSTEM_PROMPT,
+    `Resume text:\n"""\n${resumeText.slice(0, 12000)}\n"""`
+  );
 
-  const textBlock = response.content.find((b) => b.type === 'text');
   try {
-    return safeParseJson(textBlock.text);
+    return safeParseJson(text);
   } catch (err) {
     throw new Error(`LLM returned non-JSON extraction output: ${err.message}`);
   }
@@ -104,24 +120,14 @@ export async function scoreCandidateAgainstJob(resumeText, jobDescriptionText) {
     return mockScore(resumeText, jobDescriptionText);
   }
 
-  const anthropic = getClient();
-  const response = await anthropic.messages.create({
-    model: config.llmModel,
-    max_tokens: 1000,
-    system: SCORING_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: 'user',
-        content:
-          `Resume:\n"""\n${resumeText.slice(0, 8000)}\n"""\n\n` +
-          `Job description:\n"""\n${jobDescriptionText.slice(0, 4000)}\n"""`,
-      },
-    ],
-  });
+  const text = await callGemini(
+    SCORING_SYSTEM_PROMPT,
+    `Resume:\n"""\n${resumeText.slice(0, 8000)}\n"""\n\n` +
+      `Job description:\n"""\n${jobDescriptionText.slice(0, 4000)}\n"""`
+  );
 
-  const textBlock = response.content.find((b) => b.type === 'text');
   try {
-    return safeParseJson(textBlock.text);
+    return safeParseJson(text);
   } catch (err) {
     throw new Error(`LLM returned non-JSON scoring output: ${err.message}`);
   }
@@ -131,7 +137,7 @@ export async function scoreCandidateAgainstJob(resumeText, jobDescriptionText) {
  * Mock fallbacks so the app is fully demoable with zero API key set. *
  * These are keyword-based heuristics, NOT a substitute for the LLM   *
  * path above - they exist purely so `npm run dev` works out of the   *
- * box before you plug in ANTHROPIC_API_KEY.                         *
+ * box before you plug in GEMINI_API_KEY.                             *
  * ------------------------------------------------------------------ */
 
 const SKILL_VOCAB = [
@@ -170,8 +176,8 @@ function mockScore(resumeText, jobDescriptionText) {
   return {
     score,
     justification:
-      `[MOCK MODE - no ANTHROPIC_API_KEY set] Matched ${matched.length} of ${jdSkills.length} ` +
-      `keyword skills detected in the job description. Set ANTHROPIC_API_KEY in .env for real semantic scoring.`,
+      `[MOCK MODE - no GEMINI_API_KEY set] Matched ${matched.length} of ${jdSkills.length} ` +
+      `keyword skills detected in the job description. Set GEMINI_API_KEY in .env for real semantic scoring.`,
     matchedSkills: matched.map(titleCase),
     missingSkills: missing.map(titleCase),
     recommendation: score >= 7 ? 'Shortlist' : score >= 4 ? 'Maybe' : 'Reject',
