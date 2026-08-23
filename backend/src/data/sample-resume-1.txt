@@ -1,0 +1,19 @@
+John Doe
+john.doe@example.com
++1 (555) 123-4567
+
+Summary:
+Experienced full-stack developer with 6 years in building web applications using JavaScript, Node.js, Express, React, and PostgreSQL. Strong background in cloud deployment (AWS, Docker), REST API design, and team leadership.
+
+Experience:
+Senior Software Engineer, Acme Corp (2019 - Present)
+- Led backend team to build microservices using Node.js and PostgreSQL. Implemented CI/CD with GitHub Actions and Docker.
+
+Software Engineer, WebWorks (2016 - 2019)
+- Built React-based frontends and Node.js APIs. Improved app performance and reduced load time by 30%.
+
+Education:
+B.S. Computer Science, State University, 2016
+
+Skills:
+JavaScript, Node.js, Express, React, PostgreSQL, Docker, AWS, Git, REST API, CI/CD
