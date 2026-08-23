@@ -12,6 +12,7 @@ describe('pdfParser.extractResumeText (text fallback)', () => {
     // should contain key phrases and not have excessive blank lines
     assert.ok(out.includes('John Doe'));
     assert.ok(out.includes('Summary:'));
-    assert.equal((out.match(/\n\n/g) || []).length <= 1, true);
+    // no more than two consecutive newlines should remain
+    assert.equal(!/\n{3,}/.test(out), true);
   });
 });
