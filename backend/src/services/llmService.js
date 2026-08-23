@@ -1,5 +1,6 @@
 import { config, isLlmConfigured } from '../config.js';
 import pLimit from 'p-limit';
+import { getApplicationDefaultAccessToken } from './gcloudAuth.js';
 
 const GEMINI_ENDPOINT = (model) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
@@ -36,7 +37,14 @@ async function callGemini(systemPrompt, userContent) {
     }
     const url = GEMINI_ENDPOINT(config.llmModel) + (config.geminiApiKey && !config.geminiAccessToken ? `?key=${config.geminiApiKey}` : '');
     const headers = { 'Content-Type': 'application/json' };
-    if (config.geminiAccessToken) headers['Authorization'] = `Bearer ${config.geminiAccessToken}`;
+    // Prefer an explicitly provided GEMINI_ACCESS_TOKEN; otherwise attempt ADC
+    if (config.geminiAccessToken) {
+      headers['Authorization'] = `Bearer ${config.geminiAccessToken}`;
+    } else if (!config.geminiApiKey) {
+      // If no API key present, try to obtain ADC token lazily.
+      const adcToken = await getApplicationDefaultAccessToken();
+      if (adcToken) headers['Authorization'] = `Bearer ${adcToken}`;
+    }
 
     const res = await fetch(url, {
       method: 'POST',
