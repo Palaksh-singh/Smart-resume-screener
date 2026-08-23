@@ -49,7 +49,7 @@ app.listen(config.port, () => {
   console.log(`Smart Resume Screener API listening on http://localhost:${config.port}`);
   if (!isLlmConfigured()) {
     console.warn(
-          '⚠️  GEMINI_API_KEY is not set - running in MOCK mode with keyword-based scoring.\n' +
+          '⚠️  GROQ_API_KEY is not set - running in MOCK mode with keyword-based scoring.\n' +
           '   Add your free key to backend/.env (see .env.example) to enable real LLM extraction & scoring.'
     );
   }

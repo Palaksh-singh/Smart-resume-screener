@@ -1,9 +1,6 @@
 import { config, isLlmConfigured } from '../config.js';
-import pLimit from 'p-limit';
-import { getApplicationDefaultAccessToken } from './gcloudAuth.js';
 
-const GEMINI_ENDPOINT = (model) =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
 /**
  * Strips markdown code fences etc. in case the model wraps its JSON.
@@ -19,118 +16,39 @@ function safeParseJson(text) {
 }
 
 /**
- * Low-level call to the Gemini API. Sends a system instruction + one user
- * message, and asks for JSON-only output via responseMimeType.
+ * Low-level call to Groq's OpenAI-compatible chat completions endpoint.
+ * Sends a system + user message and requests JSON-only output via
+ * response_format, then returns the raw text for parsing.
  */
-async function callGemini(systemPrompt, userContent) {
-  const maxRetries = 5;
-  const baseMs = 400;
+async function callGroq(systemPrompt, userContent) {
+  const res = await fetch(GROQ_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${config.groqApiKey}`,
+    },
+    body: JSON.stringify({
+      model: config.llmModel,
+      temperature: 0.2,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent },
+      ],
+    }),
+  });
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    // If the service is in a cooldown due to quota exhaustion, fail fast
-    if (llmCooldownUntil && Date.now() < llmCooldownUntil) {
-      const waitSec = Math.ceil((llmCooldownUntil - Date.now()) / 1000);
-      console.warn(`LLM in cooldown for ${waitSec}s; skipping remote call`);
-      const err = new Error(`LLM_COOLDOWN: retry after ${waitSec}s`);
-      err.code = 'LLM_COOLDOWN';
-      throw err;
-    }
-    const url = GEMINI_ENDPOINT(config.llmModel) + (config.geminiApiKey && !config.geminiAccessToken ? `?key=${config.geminiApiKey}` : '');
-    const headers = { 'Content-Type': 'application/json' };
-    // Prefer an explicitly provided GEMINI_ACCESS_TOKEN; otherwise attempt ADC
-    if (config.geminiAccessToken) {
-      headers['Authorization'] = `Bearer ${config.geminiAccessToken}`;
-    } else if (!config.geminiApiKey) {
-      // If no API key present, try to obtain ADC token lazily.
-      const adcToken = await getApplicationDefaultAccessToken();
-      if (adcToken) headers['Authorization'] = `Bearer ${adcToken}`;
-    }
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role: 'user', parts: [{ text: userContent }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.2,
-        },
-      }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) {
-        throw new Error('Gemini API returned no text content.');
-      }
-      return text;
-    }
-
+  if (!res.ok) {
     const errBody = await res.text();
-    const status = res.status;
-
-    // Retry on transient server errors (5xx) or 429 rate-limits when attempts remain
-    const shouldRetry = (status >= 500 && status < 600) || status === 429;
-    if (!shouldRetry || attempt === maxRetries) {
-      throw new Error(`Gemini API error (${status}): ${errBody}`);
-    }
-
-    // Prefer honoring server-provided retry hints
-    let retryDelayMs = null;
-    const retryAfter = res.headers.get('retry-after') || res.headers.get('Retry-After');
-    if (retryAfter) {
-      // header may be seconds or HTTP-date
-      const secs = Number(retryAfter);
-      if (!Number.isNaN(secs)) retryDelayMs = Math.max(1000, Math.floor(secs * 1000));
-      else {
-        const date = Date.parse(retryAfter);
-        if (!Number.isNaN(date)) retryDelayMs = Math.max(1000, date - Date.now());
-      }
-    }
-
-    // Fallback: try to parse retry info from JSON body (Gemini includes RetryInfo in details)
-    if (retryDelayMs == null) {
-      try {
-        const parsed = JSON.parse(errBody || '{}');
-        const details = parsed?.error?.details || parsed?.details || [];
-        for (const d of details) {
-          if (d?.retryDelay) {
-            // retryDelay may be like '22s' or '00:00:22'
-            const m = String(d.retryDelay).match(/(\d+(?:\.\d+)?)s$/i);
-            if (m) retryDelayMs = Math.max(1000, Math.round(parseFloat(m[1]) * 1000));
-            else {
-              // attempt ISO-8601 or numeric parse
-              const n = Number(d.retryDelay);
-              if (!Number.isNaN(n)) retryDelayMs = Math.max(1000, Math.round(n * 1000));
-            }
-            if (retryDelayMs != null) break;
-          }
-        }
-      } catch (e) {
-        // ignore JSON parse errors
-      }
-    }
-
-    if (retryDelayMs == null) {
-      // Exponential backoff with jitter as a final fallback
-      retryDelayMs = Math.round(baseMs * 2 ** attempt * (0.5 + Math.random() * 0.5));
-    }
-
-    // If this was a rate-limit (429), mark a cooldown so we avoid hammering the API
-    if (status === 429) {
-      // add a small buffer to the server-provided delay
-      const bufferMs = 1000;
-      llmCooldownUntil = Date.now() + (retryDelayMs || 60000) + bufferMs;
-      console.warn(`Setting LLM cooldown until ${new Date(llmCooldownUntil).toISOString()}`);
-    }
-
-    console.warn(`Gemini request failed (status ${status}), retrying in ${retryDelayMs}ms (attempt ${attempt + 1}/${maxRetries})`);
-    await new Promise((r) => setTimeout(r, retryDelayMs));
+    throw new Error(`Groq API error (${res.status}): ${errBody}`);
   }
 
-  throw new Error('Gemini API: retries exhausted');
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content;
+  if (!text) {
+    throw new Error('Groq API returned no text content.');
+  }
+  return text;
 }
 
 /**
@@ -166,16 +84,9 @@ export async function extractStructuredResume(resumeText) {
     return mockExtraction(resumeText);
   }
 
-  if (isLlmCooldownActive()) {
-    console.warn(`LLM cooldown active, using mock extraction (remaining ${getLlmCooldownSecondsRemaining()}s)`);
-    return mockExtraction(resumeText);
-  }
-
-  const text = await llmLimiter(() =>
-    callGemini(
-      EXTRACTION_SYSTEM_PROMPT,
-      `Resume text:\n"""\n${resumeText.slice(0, 12000)}\n"""`
-    )
+  const text = await callGroq(
+    EXTRACTION_SYSTEM_PROMPT,
+    `Resume text:\n"""\n${resumeText.slice(0, 12000)}\n"""`
   );
 
   try {
@@ -213,17 +124,10 @@ export async function scoreCandidateAgainstJob(resumeText, jobDescriptionText) {
     return mockScore(resumeText, jobDescriptionText);
   }
 
-  if (isLlmCooldownActive()) {
-    console.warn(`LLM cooldown active, using mock scoring (remaining ${getLlmCooldownSecondsRemaining()}s)`);
-    return mockScore(resumeText, jobDescriptionText);
-  }
-
-  const text = await llmLimiter(() =>
-    callGemini(
-      SCORING_SYSTEM_PROMPT,
-      `Resume:\n"""\n${resumeText.slice(0, 8000)}\n"""\n\n` +
-        `Job description:\n"""\n${jobDescriptionText.slice(0, 4000)}\n"""`
-    )
+  const text = await callGroq(
+    SCORING_SYSTEM_PROMPT,
+    `Resume:\n"""\n${resumeText.slice(0, 8000)}\n"""\n\n` +
+      `Job description:\n"""\n${jobDescriptionText.slice(0, 4000)}\n"""`
   );
 
   try {
@@ -237,7 +141,7 @@ export async function scoreCandidateAgainstJob(resumeText, jobDescriptionText) {
  * Mock fallbacks so the app is fully demoable with zero API key set. *
  * These are keyword-based heuristics, NOT a substitute for the LLM   *
  * path above - they exist purely so `npm run dev` works out of the   *
- * box before you plug in GEMINI_API_KEY.                             *
+ * box before you plug in GROQ_API_KEY.                               *
  * ------------------------------------------------------------------ */
 
 const SKILL_VOCAB = [
@@ -276,8 +180,8 @@ function mockScore(resumeText, jobDescriptionText) {
   return {
     score,
     justification:
-      `[MOCK MODE - no GEMINI_API_KEY set] Matched ${matched.length} of ${jdSkills.length} ` +
-      `keyword skills detected in the job description. Set GEMINI_API_KEY in .env for real semantic scoring.`,
+      `[MOCK MODE - no GROQ_API_KEY set] Matched ${matched.length} of ${jdSkills.length} ` +
+      `keyword skills detected in the job description. Set GROQ_API_KEY in .env for real semantic scoring.`,
     matchedSkills: matched.map(titleCase),
     missingSkills: missing.map(titleCase),
     recommendation: score >= 7 ? 'Shortlist' : score >= 4 ? 'Maybe' : 'Reject',
@@ -287,21 +191,4 @@ function mockScore(resumeText, jobDescriptionText) {
 
 function titleCase(s) {
   return s.replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-// Concurrency limiter for LLM calls. Controlled by env LLM_CONCURRENCY (default 3).
-const LLM_CONCURRENCY = Number(process.env.LLM_CONCURRENCY) || 3;
-const llmLimiter = pLimit(LLM_CONCURRENCY);
-
-// Cooldown timestamp (ms since epoch). When set to a future time, remote LLM
-// calls will be skipped and fallbacks should be used instead.
-let llmCooldownUntil = 0;
-
-export function isLlmCooldownActive() {
-  return llmCooldownUntil && Date.now() < llmCooldownUntil;
-}
-
-export function getLlmCooldownSecondsRemaining() {
-  if (!isLlmCooldownActive()) return 0;
-  return Math.ceil((llmCooldownUntil - Date.now()) / 1000);
 }

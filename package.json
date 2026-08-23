@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "@google/genai": "^2.18.0",
     "p-limit": "^7.3.1"
   }
 }

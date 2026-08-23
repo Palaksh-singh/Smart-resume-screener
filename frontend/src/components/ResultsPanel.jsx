@@ -45,7 +45,7 @@ export default function ResultsPanel({ jobTitle, results, hasCandidates }) {
                 )}
 
                 <p className="justification">{r.justification}</p>
-                {r._mock && <span className="mock-flag">MOCK SCORE — add GEMINI_API_KEY for real LLM scoring</span>}
+                {r._mock && <span className="mock-flag">MOCK SCORE — add GROQ_API_KEY for real LLM scoring</span>}
               </div>
 
               <div className="score-block">
