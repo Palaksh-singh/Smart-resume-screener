@@ -1,4 +1,10 @@
 export default function ResultsPanel({ jobTitle, results, hasCandidates }) {
+  const initials = (name) => {
+    if (!name) return '??';
+    const parts = name.trim().split(/\s+/).slice(0, 2);
+    return parts.map((p) => p[0]?.toUpperCase() || '').join('');
+  };
+
   return (
     <main className="results-panel">
       <div className="results-header">
@@ -26,8 +32,13 @@ export default function ResultsPanel({ jobTitle, results, hasCandidates }) {
               <div className="rank-index">{String(i + 1).padStart(2, '0')}</div>
 
               <div className="dossier-main">
-                <p className="cand-name">{r.candidateName}</p>
-                <p className="cand-file">CANDIDATE_ID · {r.candidateId}</p>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <div className="avatar">{initials(r.candidateName)}</div>
+                  <div>
+                    <p className="cand-name">{r.candidateName}</p>
+                    <p className="cand-file">CANDIDATE_ID · {r.candidateId}</p>
+                  </div>
+                </div>
 
                 {(r.matchedSkills?.length > 0 || r.missingSkills?.length > 0) && (
                   <div className="tag-row">
