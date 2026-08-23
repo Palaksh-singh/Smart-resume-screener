@@ -1,5 +1,6 @@
 process.env.GEMINI_API_KEY = '';
 import { strict as assert } from 'assert';
+import { describe, it } from 'node:test';
 import { extractStructuredResume, scoreCandidateAgainstJob } from '../src/services/llmService.js';
 
 describe('llmService mock fallbacks when GEMINI_API_KEY unset', () => {

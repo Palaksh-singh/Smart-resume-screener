@@ -1,4 +1,5 @@
 import { strict as assert } from 'assert';
+import { describe, it } from 'node:test';
 import { extractResumeText } from '../src/services/pdfParser.js';
 
 describe('pdfParser.extractResumeText (text fallback)', () => {
