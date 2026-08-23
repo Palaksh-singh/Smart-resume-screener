@@ -21,48 +21,30 @@ function safeParseJson(text) {
  * message, and asks for JSON-only output via responseMimeType.
  */
 async function callGemini(systemPrompt, userContent) {
-  const maxRetries = 5;
-  const baseMs = 400;
+  const res = await fetch(`${GEMINI_ENDPOINT(config.llmModel)}?key=${config.geminiApiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: 'user', parts: [{ text: userContent }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.2,
+      },
+    }),
+  });
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const res = await fetch(`${GEMINI_ENDPOINT(config.llmModel)}?key=${config.geminiApiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role: 'user', parts: [{ text: userContent }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.2,
-        },
-      }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) {
-        throw new Error('Gemini API returned no text content.');
-      }
-      return text;
-    }
-
+  if (!res.ok) {
     const errBody = await res.text();
-    const status = res.status;
-
-    // Retry on transient server errors (5xx) or 429 rate-limits when attempts remain
-    const shouldRetry = (status >= 500 && status < 600) || status === 429;
-    if (!shouldRetry || attempt === maxRetries) {
-      throw new Error(`Gemini API error (${status}): ${errBody}`);
-    }
-
-    // Exponential backoff with jitter
-    const backoff = Math.round(baseMs * 2 ** attempt * (0.5 + Math.random() * 0.5));
-    console.warn(`Gemini request failed (status ${status}), retrying in ${backoff}ms (attempt ${attempt + 1}/${maxRetries})`);
-    await new Promise((r) => setTimeout(r, backoff));
+    throw new Error(`Gemini API error (${res.status}): ${errBody}`);
   }
 
-  throw new Error('Gemini API: retries exhausted');
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    throw new Error('Gemini API returned no text content.');
+  }
+  return text;
 }
 
 /**
