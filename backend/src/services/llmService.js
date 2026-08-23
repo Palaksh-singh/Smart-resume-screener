@@ -1,4 +1,5 @@
 import { config, isLlmConfigured } from '../config.js';
+import pLimit from 'p-limit';
 
 const GEMINI_ENDPOINT = (model) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
@@ -137,9 +138,11 @@ export async function extractStructuredResume(resumeText) {
     return mockExtraction(resumeText);
   }
 
-  const text = await callGemini(
-    EXTRACTION_SYSTEM_PROMPT,
-    `Resume text:\n"""\n${resumeText.slice(0, 12000)}\n"""`
+  const text = await llmLimiter(() =>
+    callGemini(
+      EXTRACTION_SYSTEM_PROMPT,
+      `Resume text:\n"""\n${resumeText.slice(0, 12000)}\n"""`
+    )
   );
 
   try {
@@ -177,10 +180,12 @@ export async function scoreCandidateAgainstJob(resumeText, jobDescriptionText) {
     return mockScore(resumeText, jobDescriptionText);
   }
 
-  const text = await callGemini(
-    SCORING_SYSTEM_PROMPT,
-    `Resume:\n"""\n${resumeText.slice(0, 8000)}\n"""\n\n` +
-      `Job description:\n"""\n${jobDescriptionText.slice(0, 4000)}\n"""`
+  const text = await llmLimiter(() =>
+    callGemini(
+      SCORING_SYSTEM_PROMPT,
+      `Resume:\n"""\n${resumeText.slice(0, 8000)}\n"""\n\n` +
+        `Job description:\n"""\n${jobDescriptionText.slice(0, 4000)}\n"""`
+    )
   );
 
   try {
@@ -245,3 +250,7 @@ function mockScore(resumeText, jobDescriptionText) {
 function titleCase(s) {
   return s.replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+// Concurrency limiter for LLM calls. Controlled by env LLM_CONCURRENCY (default 3).
+const LLM_CONCURRENCY = Number(process.env.LLM_CONCURRENCY) || 3;
+const llmLimiter = pLimit(LLM_CONCURRENCY);
