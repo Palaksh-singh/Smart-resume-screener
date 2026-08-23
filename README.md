@@ -6,7 +6,7 @@ justified shortlist.
 
 Built for the **Unthinkable** take-home assignment (Project 1: Smart Resume Screener).
 
-> 🎥 **Demo video:** _add your 2–3 min Loom/YouTube link here before submitting_
+> 🎥 **Demo video:** _ will add 2–3 min Loom/YouTube link here before submitting_
 
 ---
 
