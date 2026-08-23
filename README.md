@@ -6,7 +6,7 @@ justified shortlist.
 
 Built for the **Unthinkable** take-home assignment (Project 1: Smart Resume Screener).
 
-> 🎥 **Demo video:** _ will add 2–3 min Loom/YouTube link here before submitting_
+> 🎥 **Demo video:** _add your 2–3 min Loom/YouTube link here before submitting_
 
 ---
 
@@ -14,12 +14,13 @@ Built for the **Unthinkable** take-home assignment (Project 1: Smart Resume Scre
 
 - [What it does](#1-what-it-does)
 - [Architecture](#2-architecture)
-- [Quick start](#quick-start)
 - [LLM usage & prompts](#3-llm-usage--prompts)
-- [Running tests & CI](#running-tests)
-- [Contributing](#contributing)
-- [Contact](#contact)
+- [Setup & running locally](#4-setup--running-locally)
+- [Running tests & CI](#running-tests--ci)
+- [Design notes / trade-offs](#5-design-notes--trade-offs)
+- [Possible next steps](#6-possible-next-steps)
 
+---
 
 ## 1. What it does
 
@@ -34,10 +35,9 @@ Built for the **Unthinkable** take-home assignment (Project 1: Smart Resume Scre
 
 The app runs **fully offline in "mock mode"** with zero configuration (keyword-based
 heuristic scoring), and automatically switches to **real LLM scoring** the moment you
-add a `GROQ_API_KEY` (or another provider key) — so it's demoable immediately and upgradeable in one step.
-Copy `.env.example` to `.env` and set `GROQ_API_KEY` (or your chosen provider key) to enable real scoring.
-
-### LLM provider (e.g. Groq)
+add a `GROQ_API_KEY` — so it's demoable immediately and upgradeable in one step.
+Groq was chosen for the LLM calls because it has a genuine free tier (no credit card
+required), keeping the project runnable end-to-end at zero cost.
 
 ---
 
@@ -64,10 +64,10 @@ Copy `.env.example` to `.env` and set `GROQ_API_KEY` (or your chosen provider ke
                             │            │
              ┌──────────────┘            └───────────────┐
              ▼                                            ▼
-   ┌───────────────────┐                       ┌───────────────────────┐
-  │  pdf-parse         │                       │  Groq (or OpenAI-compatible)  │
-  │  (text extraction) │                       │  (extraction + scoring)       │
-   └───────────────────┘                       └───────────────────────┘
+   ┌───────────────────┐                       ┌────────────────────────┐
+   │  pdf-parse         │                       │  Groq API               │
+   │  (text extraction) │                       │  (extraction + scoring) │
+   └───────────────────┘                       └────────────────────────┘
              │                                            │
              └───────────────────┬────────────────────────┘
                                   ▼
@@ -86,9 +86,10 @@ Copy `.env.example` to `.env` and set `GROQ_API_KEY` (or your chosen provider ke
   requirement with zero setup (no DB server to install for the reviewer). The data
   access is isolated behind `src/db.js`, so swapping in Postgres/MongoDB later only
   touches one file — the routes and services don't change.
-**Groq (or OpenAI-compatible provider)** — used for both structured extraction and semantic
-  match scoring (see prompts below). Called directly from the backend so the API key
-  never reaches the browser.
+- **Groq API** (OpenAI-compatible `chat/completions` endpoint) — used for both
+  structured extraction and semantic match scoring (see prompts below), called
+  directly from the backend so the API key never reaches the browser. Chosen over
+  other providers specifically because it has a genuine free tier.
 - **React + Vite** — the optional frontend dashboard, kept dependency-light (no
   component library) so the UI code is easy to read end-to-end.
 
@@ -96,6 +97,7 @@ Copy `.env.example` to `.env` and set `GROQ_API_KEY` (or your chosen provider ke
 
 ```
 smart-resume-screener/
+├── .github/workflows/nodejs.yml  # CI: runs backend tests on push/PR
 ├── backend/
 │   ├── src/
 │   │   ├── index.js              # Express app + route wiring
@@ -108,7 +110,8 @@ smart-resume-screener/
 │   │   │   └── match.js          # run + fetch LLM scoring
 │   │   └── services/
 │   │       ├── pdfParser.js      # PDF/TXT → plain text
-│   │       └── llmService.js     # Claude API calls + prompts (+ mock fallback)
+│   │       ├── llmService.js     # Groq API calls + prompts (+ mock fallback)
+│   │       └── __tests__/        # unit tests (Node's built-in test runner)
 │   ├── package.json
 │   └── .env.example
 ├── frontend/
@@ -124,73 +127,6 @@ smart-resume-screener/
 ```
 
 ---
-
-## Quick start
-
-Follow these steps to run the project locally.
-
-1) Backend
-
-```bash
-cd backend
-npm install
-cp .env.example .env
-# Optionally set GEMINI_API_KEY in backend/.env to enable real LLM scoring
-npm start
-```
-
-2) Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open the frontend at http://localhost:5173 and the API at the port shown when starting the backend.
-
-## Features
-
-- PDF and plain-text resume ingestion
-- Structured extraction (name, contact, skills, experience, education)
-- Semantic scoring and ranking vs job descriptions (LLM-powered)
-- Mock mode for zero-key demos
-- Unit tests + CI workflow
-
-## Example: score candidates via curl
-
-Create a job and upload a candidate first; then run:
-
-```bash
-curl -X POST http://localhost:5001/api/match/<JOB_ID> \
-  -H 'Content-Type: application/json' \
-  -d '{"candidateIds": ["<CANDIDATE_ID>"]}'
-```
-
-## Running tests
-
-Run backend tests locally:
-
-```bash
-cd backend
-npm test
-```
-
-CI is enabled via `.github/workflows/nodejs.yml` and runs backend tests on push/PR.
-
-## Contributing
-
-Contributions should be small, focused commits. Suggested flow:
-
-1. Fork and branch: `git checkout -b feat/your-change`
-2. Make a small change and add tests if relevant
-3. Run tests: `cd backend && npm test`
-4. Push and open a PR
-
-## Contact
-
-Questions or feedback: palakshkumar866@gmail.com
-
 
 ## 3. LLM usage & prompts
 
@@ -231,7 +167,7 @@ each truncated to a safe token budget so long resumes don't blow the context win
 If `GROQ_API_KEY` is not set, both functions fall back to a keyword-overlap
 heuristic (see `mockExtraction` / `mockScore` in `llmService.js`) so the app is fully
 functional and demoable without any API key. Every mock result is tagged `"_mock": true`
-and the UI surfaces a visible **"MOCK SCORE"** badge — nothing is silently faked. If no provider API key is set (for example, `GROQ_API_KEY`), both functions fall back to a keyword-overlap heuristic.
+and the UI surfaces a visible **"MOCK SCORE"** badge — nothing is silently faked.
 
 ---
 
@@ -246,21 +182,11 @@ and the UI surfaces a visible **"MOCK SCORE"** badge — nothing is silently fak
 cd backend
 npm install
 cp .env.example .env
-# Optional: paste your provider key into .env → GROQ_API_KEY=your_key_here
-# The server reads PORT from .env (defaults to 5001 in this repo)
-npm start
+# Optional: get a free key at https://console.groq.com/keys
+# and paste it into .env → GROQ_API_KEY=gsk_...
+npm start          # http://localhost:5000
 ```
 
-### Running tests
-
-Run the backend unit tests with Node's built-in test runner:
-
-```bash
-cd backend
-npm test
-```
-
-CI: a GitHub Actions workflow is included at `.github/workflows/nodejs.yml` and runs the backend tests on pushes and pull requests.
 ### Frontend
 
 ```bash
@@ -284,6 +210,29 @@ Open `http://localhost:5173`, paste a job description, upload one or more resume
 | GET    | `/api/jobs`           | List job descriptions                           |
 | POST   | `/api/match/:jobId`   | Score candidates against a job (optional `{ candidateIds }`) |
 | GET    | `/api/match/:jobId`   | Fetch stored match results for a job, ranked    |
+
+**Example: score candidates via curl** (create a job and upload a candidate first):
+
+```bash
+curl -X POST http://localhost:5000/api/match/<JOB_ID> \
+  -H 'Content-Type: application/json' \
+  -d '{"candidateIds": ["<CANDIDATE_ID>"]}'
+```
+
+---
+
+## Running tests & CI
+
+Unit tests cover the mock-mode extraction/scoring logic and the text-normalization
+helper, using Node's built-in test runner (no extra test framework dependency):
+
+```bash
+cd backend
+npm test
+```
+
+A GitHub Actions workflow at `.github/workflows/nodejs.yml` runs these tests
+automatically on every push and pull request.
 
 ---
 
