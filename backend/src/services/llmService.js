@@ -34,9 +34,13 @@ async function callGemini(systemPrompt, userContent) {
       err.code = 'LLM_COOLDOWN';
       throw err;
     }
-    const res = await fetch(`${GEMINI_ENDPOINT(config.llmModel)}?key=${config.geminiApiKey}`, {
+    const url = GEMINI_ENDPOINT(config.llmModel) + (config.geminiApiKey && !config.geminiAccessToken ? `?key=${config.geminiApiKey}` : '');
+    const headers = { 'Content-Type': 'application/json' };
+    if (config.geminiAccessToken) headers['Authorization'] = `Bearer ${config.geminiAccessToken}`;
+
+    const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents: [{ role: 'user', parts: [{ text: userContent }] }],
