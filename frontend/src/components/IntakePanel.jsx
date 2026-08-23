@@ -120,6 +120,12 @@ export default function IntakePanel({
       >
         {isMatching ? 'Scoring candidates…' : `Score ${candidates.length || ''} candidate${candidates.length === 1 ? '' : 's'}`}
       </button>
+      {/* Disabled reason hint */}
+      {(!isMatching && (candidates.length === 0 || jobDescription.trim().length < 20)) && (
+        <div className="disabled-hint">
+          {candidates.length === 0 ? 'Upload at least one resume to enable scoring.' : 'Enter a longer job description (min 20 characters).'}
+        </div>
+      )}
     </aside>
   );
 }

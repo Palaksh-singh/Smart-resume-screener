@@ -76,6 +76,10 @@ export default function App() {
         </div>
       </header>
 
+      {health && !health.llmConfigured && (
+        <div className="mock-banner">Running in MOCK mode — set <strong>GROQ_API_KEY</strong> to enable real LLM scoring.</div>
+      )}
+
       <div className="workspace">
         <IntakePanel
           jobTitle={jobTitle}
@@ -96,6 +100,15 @@ export default function App() {
           hasCandidates={candidates.length > 0}
         />
       </div>
+
+      {isMatching && (
+        <div className="global-overlay">
+          <div className="overlay-inner">
+            <span className="spinner" />
+            <div style={{ marginTop: 8 }}>Scoring candidates…</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
