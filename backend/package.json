@@ -10,6 +10,7 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@google/genai": "^2.18.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
@@ -17,11 +18,10 @@
     "multer": "^2.0.1",
     "nanoid": "^5.0.9",
     "pdf-parse": "^1.1.1"
-    ,"@google/genai": "^0.1.0"
   },
   "optionalDependencies": {
-    "p-limit": "^4.0.0",
-    "google-auth-library": "^9.0.0"
+    "google-auth-library": "^9.0.0",
+    "p-limit": "^4.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
