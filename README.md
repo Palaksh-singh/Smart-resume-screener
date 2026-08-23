@@ -10,6 +10,17 @@ Built for the **Unthinkable** take-home assignment (Project 1: Smart Resume Scre
 
 ---
 
+## Table of contents
+
+- [What it does](#1-what-it-does)
+- [Architecture](#2-architecture)
+- [Quick start](#quick-start)
+- [LLM usage & prompts](#3-llm-usage--prompts)
+- [Running tests & CI](#running-tests)
+- [Contributing](#contributing)
+- [Contact](#contact)
+
+
 ## 1. What it does
 
 1. **Intake** — upload one or more resumes (PDF or `.txt`) and paste a job description.
@@ -113,6 +124,73 @@ smart-resume-screener/
 ```
 
 ---
+
+## Quick start
+
+Follow these steps to run the project locally.
+
+1) Backend
+
+```bash
+cd backend
+npm install
+cp .env.example .env
+# Optionally set GEMINI_API_KEY in backend/.env to enable real LLM scoring
+npm start
+```
+
+2) Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open the frontend at http://localhost:5173 and the API at the port shown when starting the backend.
+
+## Features
+
+- PDF and plain-text resume ingestion
+- Structured extraction (name, contact, skills, experience, education)
+- Semantic scoring and ranking vs job descriptions (LLM-powered)
+- Mock mode for zero-key demos
+- Unit tests + CI workflow
+
+## Example: score candidates via curl
+
+Create a job and upload a candidate first; then run:
+
+```bash
+curl -X POST http://localhost:5001/api/match/<JOB_ID> \
+  -H 'Content-Type: application/json' \
+  -d '{"candidateIds": ["<CANDIDATE_ID>"]}'
+```
+
+## Running tests
+
+Run backend tests locally:
+
+```bash
+cd backend
+npm test
+```
+
+CI is enabled via `.github/workflows/nodejs.yml` and runs backend tests on push/PR.
+
+## Contributing
+
+Contributions should be small, focused commits. Suggested flow:
+
+1. Fork and branch: `git checkout -b feat/your-change`
+2. Make a small change and add tests if relevant
+3. Run tests: `cd backend && npm test`
+4. Push and open a PR
+
+## Contact
+
+Questions or feedback: your-email@example.com
+
 
 ## 3. LLM usage & prompts
 
