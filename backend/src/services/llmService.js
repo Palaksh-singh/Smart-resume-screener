@@ -26,6 +26,14 @@ async function callGemini(systemPrompt, userContent) {
   const baseMs = 400;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    // If the service is in a cooldown due to quota exhaustion, fail fast
+    if (llmCooldownUntil && Date.now() < llmCooldownUntil) {
+      const waitSec = Math.ceil((llmCooldownUntil - Date.now()) / 1000);
+      console.warn(`LLM in cooldown for ${waitSec}s; skipping remote call`);
+      const err = new Error(`LLM_COOLDOWN: retry after ${waitSec}s`);
+      err.code = 'LLM_COOLDOWN';
+      throw err;
+    }
     const res = await fetch(`${GEMINI_ENDPOINT(config.llmModel)}?key=${config.geminiApiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -98,6 +106,14 @@ async function callGemini(systemPrompt, userContent) {
       retryDelayMs = Math.round(baseMs * 2 ** attempt * (0.5 + Math.random() * 0.5));
     }
 
+    // If this was a rate-limit (429), mark a cooldown so we avoid hammering the API
+    if (status === 429) {
+      // add a small buffer to the server-provided delay
+      const bufferMs = 1000;
+      llmCooldownUntil = Date.now() + (retryDelayMs || 60000) + bufferMs;
+      console.warn(`Setting LLM cooldown until ${new Date(llmCooldownUntil).toISOString()}`);
+    }
+
     console.warn(`Gemini request failed (status ${status}), retrying in ${retryDelayMs}ms (attempt ${attempt + 1}/${maxRetries})`);
     await new Promise((r) => setTimeout(r, retryDelayMs));
   }
@@ -135,6 +151,11 @@ Rules:
 
 export async function extractStructuredResume(resumeText) {
   if (!isLlmConfigured()) {
+    return mockExtraction(resumeText);
+  }
+
+  if (isLlmCooldownActive()) {
+    console.warn(`LLM cooldown active, using mock extraction (remaining ${getLlmCooldownSecondsRemaining()}s)`);
     return mockExtraction(resumeText);
   }
 
@@ -177,6 +198,11 @@ Respond with ONLY a valid JSON object (no markdown, no commentary) matching exac
 
 export async function scoreCandidateAgainstJob(resumeText, jobDescriptionText) {
   if (!isLlmConfigured()) {
+    return mockScore(resumeText, jobDescriptionText);
+  }
+
+  if (isLlmCooldownActive()) {
+    console.warn(`LLM cooldown active, using mock scoring (remaining ${getLlmCooldownSecondsRemaining()}s)`);
     return mockScore(resumeText, jobDescriptionText);
   }
 
@@ -254,3 +280,16 @@ function titleCase(s) {
 // Concurrency limiter for LLM calls. Controlled by env LLM_CONCURRENCY (default 3).
 const LLM_CONCURRENCY = Number(process.env.LLM_CONCURRENCY) || 3;
 const llmLimiter = pLimit(LLM_CONCURRENCY);
+
+// Cooldown timestamp (ms since epoch). When set to a future time, remote LLM
+// calls will be skipped and fallbacks should be used instead.
+let llmCooldownUntil = 0;
+
+export function isLlmCooldownActive() {
+  return llmCooldownUntil && Date.now() < llmCooldownUntil;
+}
+
+export function getLlmCooldownSecondsRemaining() {
+  if (!isLlmCooldownActive()) return 0;
+  return Math.ceil((llmCooldownUntil - Date.now()) / 1000);
+}
