@@ -189,7 +189,7 @@ Contributions should be small, focused commits. Suggested flow:
 
 ## Contact
 
-Questions or feedback: your-email@example.com
+Questions or feedback: palakshkumar866@gmail.com
 
 
 ## 3. LLM usage & prompts
