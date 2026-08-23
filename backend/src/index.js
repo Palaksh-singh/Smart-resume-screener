@@ -10,6 +10,16 @@ const app = express();
 app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json({ limit: '2mb' }));
 
+// Lightweight request logging (method, path, status, duration)
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.once('finish', () => {
+    const ms = Date.now() - start;
+    console.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${ms}ms`);
+  });
+  next();
+});
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -24,8 +34,15 @@ app.use('/api/match', matchRouter);
 
 // Central error handler (e.g. multer file-type/size errors)
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(err.status || 500).json({ error: err.message || 'Internal server error.' });
+  const status = err.status || 500;
+  const payload = { error: err.message || 'Internal server error.' };
+  // Include stack trace in non-production for easier debugging
+  if (process.env.NODE_ENV !== 'production' && err.stack) {
+    payload.stack = err.stack;
+  }
+  console.error(`Error ${status} on ${req.method} ${req.originalUrl}:`, err.message);
+  if (err.stack) console.error(err.stack);
+  res.status(status).json(payload);
 });
 
 app.listen(config.port, () => {
