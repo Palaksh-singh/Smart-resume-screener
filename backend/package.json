@@ -1,0 +1,24 @@
+{
+  "name": "smart-resume-screener-backend",
+  "version": "1.0.0",
+  "description": "Backend API for the Smart Resume Screener - parses resumes, extracts structured data, and uses an LLM to score candidate fit against a job description.",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "lowdb": "^7.0.1",
+    "multer": "^2.0.1",
+    "nanoid": "^5.0.9",
+    "pdf-parse": "^1.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
