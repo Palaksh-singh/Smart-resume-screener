@@ -24,6 +24,9 @@ Built for the **Unthinkable** take-home assignment (Project 1: Smart Resume Scre
 The app runs **fully offline in "mock mode"** with zero configuration (keyword-based
 heuristic scoring), and automatically switches to **real LLM scoring** the moment you
 add an `ANTHROPIC_API_KEY` — so it's demoable immediately and upgradeable in one step.
+Copy `.env.example` to `.env` and set `GEMINI_API_KEY` (or your chosen provider key) to enable real scoring.
+
+### LLM provider (e.g. Google Gemini)
 
 ---
 
@@ -150,7 +153,7 @@ each truncated to a safe token budget so long resumes don't blow the context win
 If `ANTHROPIC_API_KEY` is not set, both functions fall back to a keyword-overlap
 heuristic (see `mockExtraction` / `mockScore` in `llmService.js`) so the app is fully
 functional and demoable without any API key. Every mock result is tagged `"_mock": true`
-and the UI surfaces a visible **"MOCK SCORE"** badge — nothing is silently faked.
+and the UI surfaces a visible **"MOCK SCORE"** badge — nothing is silently faked. If no provider API key is set (for example, `GEMINI_API_KEY`), both functions fall back to a keyword-overlap heuristic.
 
 ---
 
@@ -165,10 +168,21 @@ and the UI surfaces a visible **"MOCK SCORE"** badge — nothing is silently fak
 cd backend
 npm install
 cp .env.example .env
-# Optional: paste your key into .env → ANTHROPIC_API_KEY=sk-ant-...
-npm start          # http://localhost:5000
+# Optional: paste your provider key into .env → GEMINI_API_KEY=your_key_here
+# The server reads PORT from .env (defaults to 5001 in this repo)
+npm start
 ```
 
+### Running tests
+
+Run the backend unit tests with Node's built-in test runner:
+
+```bash
+cd backend
+npm test
+```
+
+CI: a GitHub Actions workflow is included at `.github/workflows/nodejs.yml` and runs the backend tests on pushes and pull requests.
 ### Frontend
 
 ```bash
