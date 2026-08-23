@@ -34,10 +34,10 @@ Built for the **Unthinkable** take-home assignment (Project 1: Smart Resume Scre
 
 The app runs **fully offline in "mock mode"** with zero configuration (keyword-based
 heuristic scoring), and automatically switches to **real LLM scoring** the moment you
-add an `ANTHROPIC_API_KEY` — so it's demoable immediately and upgradeable in one step.
-Copy `.env.example` to `.env` and set `GEMINI_API_KEY` (or your chosen provider key) to enable real scoring.
+add a `GROQ_API_KEY` (or another provider key) — so it's demoable immediately and upgradeable in one step.
+Copy `.env.example` to `.env` and set `GROQ_API_KEY` (or your chosen provider key) to enable real scoring.
 
-### LLM provider (e.g. Google Gemini)
+### LLM provider (e.g. Groq)
 
 ---
 
@@ -65,8 +65,8 @@ Copy `.env.example` to `.env` and set `GEMINI_API_KEY` (or your chosen provider 
              ┌──────────────┘            └───────────────┐
              ▼                                            ▼
    ┌───────────────────┐                       ┌───────────────────────┐
-   │  pdf-parse         │                       │  Anthropic Claude API  │
-   │  (text extraction) │                       │  (extraction + scoring)│
+  │  pdf-parse         │                       │  Groq (or OpenAI-compatible)  │
+  │  (text extraction) │                       │  (extraction + scoring)       │
    └───────────────────┘                       └───────────────────────┘
              │                                            │
              └───────────────────┬────────────────────────┘
@@ -86,7 +86,7 @@ Copy `.env.example` to `.env` and set `GEMINI_API_KEY` (or your chosen provider 
   requirement with zero setup (no DB server to install for the reviewer). The data
   access is isolated behind `src/db.js`, so swapping in Postgres/MongoDB later only
   touches one file — the routes and services don't change.
-- **Anthropic Claude API** — used for both structured extraction and semantic
+**Groq (or OpenAI-compatible provider)** — used for both structured extraction and semantic
   match scoring (see prompts below). Called directly from the backend so the API key
   never reaches the browser.
 - **React + Vite** — the optional frontend dashboard, kept dependency-light (no
@@ -228,10 +228,10 @@ each truncated to a safe token budget so long resumes don't blow the context win
 
 ### 3.3 Mock mode
 
-If `ANTHROPIC_API_KEY` is not set, both functions fall back to a keyword-overlap
+If `GROQ_API_KEY` is not set, both functions fall back to a keyword-overlap
 heuristic (see `mockExtraction` / `mockScore` in `llmService.js`) so the app is fully
 functional and demoable without any API key. Every mock result is tagged `"_mock": true`
-and the UI surfaces a visible **"MOCK SCORE"** badge — nothing is silently faked. If no provider API key is set (for example, `GEMINI_API_KEY`), both functions fall back to a keyword-overlap heuristic.
+and the UI surfaces a visible **"MOCK SCORE"** badge — nothing is silently faked. If no provider API key is set (for example, `GROQ_API_KEY`), both functions fall back to a keyword-overlap heuristic.
 
 ---
 
@@ -246,7 +246,7 @@ and the UI surfaces a visible **"MOCK SCORE"** badge — nothing is silently fak
 cd backend
 npm install
 cp .env.example .env
-# Optional: paste your provider key into .env → GEMINI_API_KEY=your_key_here
+# Optional: paste your provider key into .env → GROQ_API_KEY=your_key_here
 # The server reads PORT from .env (defaults to 5001 in this repo)
 npm start
 ```

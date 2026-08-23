@@ -17,10 +17,10 @@ async function main() {
     process.exit(1);
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY });
 
   const response = await ai.models.generateContent({
-    model: process.env.LLM_MODEL || 'gemini-3.6-flash',
+    model: process.env.LLM_MODEL || 'groq-1.0',
     contents: [{ type: 'text', text: 'Hello from Smart Resume Screener demo' }],
   });
 
@@ -41,7 +41,7 @@ main().catch((err) => {
         /* ignore */
       }
 
-      console.error('Gemini quota exceeded. Please retry' + (secs ? ` after ~${secs}s.` : '.'));
+      console.error('LLM quota exceeded. Please retry' + (secs ? ` after ~${secs}s.` : '.'));
       console.error('Falling back to a simple mock response for demo purposes.');
       console.log(JSON.stringify({ mock: true, text: 'Hello (mock response due to quota)' }, null, 2));
       process.exit(0);

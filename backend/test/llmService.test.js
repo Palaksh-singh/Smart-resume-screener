@@ -1,12 +1,12 @@
-process.env.GEMINI_API_KEY = '';
+process.env.GROQ_API_KEY = '';
 import { strict as assert } from 'assert';
 import { describe, it } from 'node:test';
 import { config } from '../src/config.js';
 
-describe('llmService mock fallbacks when GEMINI_API_KEY unset', () => {
+describe('llmService mock fallbacks when GROQ_API_KEY unset', () => {
   it('extractStructuredResume returns mock extraction object', async () => {
     // Ensure config reflects no API key before loading the service
-    config.geminiApiKey = '';
+    config.groqApiKey = '';
     const { extractStructuredResume } = await import('../src/services/llmService.js');
 
     const resume = 'Jane Smith\njane@example.com\nExperienced developer with JavaScript and Node.js.';
@@ -16,7 +16,7 @@ describe('llmService mock fallbacks when GEMINI_API_KEY unset', () => {
   });
 
   it('scoreCandidateAgainstJob returns mock scoring object', async () => {
-    config.geminiApiKey = '';
+    config.groqApiKey = '';
     const { scoreCandidateAgainstJob } = await import('../src/services/llmService.js');
 
     const resume = 'Developer with JavaScript, Node.js, React.';
