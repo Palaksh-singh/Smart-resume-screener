@@ -19,12 +19,13 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install backend dependencies
-        working-directory: backend
+      - name: Install & test backend (with debug)
+        working-directory: .
         run: |
-          npm ci
-
-      - name: Run backend tests
-        working-directory: backend
-        run: |
-          npm test
+          echo "Node version:"; node -v
+          echo "npm version:"; npm -v
+          echo "Listing backend folder:"; ls -la backend || true
+          echo "Installing backend dependencies";
+          npm ci --prefix backend
+          echo "Running backend tests";
+          npm test --prefix backend
