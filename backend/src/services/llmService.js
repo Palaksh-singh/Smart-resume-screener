@@ -56,10 +56,49 @@ async function callGemini(systemPrompt, userContent) {
       throw new Error(`Gemini API error (${status}): ${errBody}`);
     }
 
-    // Exponential backoff with jitter
-    const backoff = Math.round(baseMs * 2 ** attempt * (0.5 + Math.random() * 0.5));
-    console.warn(`Gemini request failed (status ${status}), retrying in ${backoff}ms (attempt ${attempt + 1}/${maxRetries})`);
-    await new Promise((r) => setTimeout(r, backoff));
+    // Prefer honoring server-provided retry hints
+    let retryDelayMs = null;
+    const retryAfter = res.headers.get('retry-after') || res.headers.get('Retry-After');
+    if (retryAfter) {
+      // header may be seconds or HTTP-date
+      const secs = Number(retryAfter);
+      if (!Number.isNaN(secs)) retryDelayMs = Math.max(1000, Math.floor(secs * 1000));
+      else {
+        const date = Date.parse(retryAfter);
+        if (!Number.isNaN(date)) retryDelayMs = Math.max(1000, date - Date.now());
+      }
+    }
+
+    // Fallback: try to parse retry info from JSON body (Gemini includes RetryInfo in details)
+    if (retryDelayMs == null) {
+      try {
+        const parsed = JSON.parse(errBody || '{}');
+        const details = parsed?.error?.details || parsed?.details || [];
+        for (const d of details) {
+          if (d?.retryDelay) {
+            // retryDelay may be like '22s' or '00:00:22'
+            const m = String(d.retryDelay).match(/(\d+(?:\.\d+)?)s$/i);
+            if (m) retryDelayMs = Math.max(1000, Math.round(parseFloat(m[1]) * 1000));
+            else {
+              // attempt ISO-8601 or numeric parse
+              const n = Number(d.retryDelay);
+              if (!Number.isNaN(n)) retryDelayMs = Math.max(1000, Math.round(n * 1000));
+            }
+            if (retryDelayMs != null) break;
+          }
+        }
+      } catch (e) {
+        // ignore JSON parse errors
+      }
+    }
+
+    if (retryDelayMs == null) {
+      // Exponential backoff with jitter as a final fallback
+      retryDelayMs = Math.round(baseMs * 2 ** attempt * (0.5 + Math.random() * 0.5));
+    }
+
+    console.warn(`Gemini request failed (status ${status}), retrying in ${retryDelayMs}ms (attempt ${attempt + 1}/${maxRetries})`);
+    await new Promise((r) => setTimeout(r, retryDelayMs));
   }
 
   throw new Error('Gemini API: retries exhausted');
