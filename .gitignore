@@ -18,3 +18,38 @@ npm-debug.log*
 # OS / editor
 .DS_Store
 .vscode/
+
+# Environment variations (ignore all env variants but keep the example)
+.env*
+!.env.example
+
+# Caches and build output
+.cache/
+.parcel-cache/
+dist/
+build/
+out/
+.vite/
+*.tsbuildinfo
+
+# Coverage and test reports
+coverage/
+.nyc_output/
+
+# Misc logs
+logs/
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDEs and editors
+.idea/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS files
+Thumbs.db
+desktop.ini
