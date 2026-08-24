@@ -257,3 +257,48 @@ automatically on every push and pull request.
 - DOCX support via `mammoth`
 - Auth + multi-recruiter workspaces
 - Swap lowdb → Postgres with Prisma for concurrent multi-user use
+
+---
+
+## Sample job Description
+
+**Role:** AI Engineer
+
+We are looking for an AI Engineer to design, develop, and deploy intelligent applications powered by machine learning and large language models.
+
+## Responsibilities
+
+- Build and integrate AI and machine-learning solutions into applications.
+- Develop LLM-powered features such as chatbots, resume screening, summarization, and information extraction.
+- Work with models and APIs such as Gemini, OpenAI, or similar platforms.
+- Create effective prompts and evaluate model responses for accuracy and reliability.
+- Prepare, clean, and analyze structured and unstructured data.
+- Develop backend services and APIs for AI applications.
+- Collaborate with software engineers, product teams, and other stakeholders.
+- Monitor application performance, troubleshoot issues, and improve model quality.
+- Follow responsible AI practices, including privacy, security, fairness, and bias reduction.
+
+## Requirements
+
+- Bachelor’s degree in Computer Science, Artificial Intelligence, Data Science, or a related field.
+- Strong programming skills in Python and familiarity with JavaScript or TypeScript.
+- Experience with machine learning, natural-language processing, or generative AI.
+- Knowledge of REST APIs, databases, Git, and cloud platforms.
+- Familiarity with frameworks such as LangChain, LlamaIndex, TensorFlow, PyTorch, or scikit-learn.
+- Understanding of prompt engineering, embeddings, vector databases, and retrieval-augmented generation.
+- Strong analytical, communication, and problem-solving skills.
+
+## Preferred Qualifications
+
+- Experience deploying AI applications to production.
+- Knowledge of Docker, CI/CD, and cloud services.
+- Experience with evaluation frameworks and model monitoring.
+- Familiarity with React or another modern frontend framework.
+- Previous experience building document-processing or recruitment-related systems.
+
+## Example Success Measures
+
+- Deliver reliable AI features that meet product requirements.
+- Improve model accuracy and response quality through testing and evaluation.
+- Build scalable, secure, and maintainable services.
+- Reduce manual effort through effective automation.
