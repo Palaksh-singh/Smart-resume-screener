@@ -266,7 +266,7 @@ automatically on every push and pull request.
 
 We are looking for an AI Engineer to design, develop, and deploy intelligent applications powered by machine learning and large language models.
 
-# Responsibilities
+Responsibilities
 
 - Build and integrate AI and machine-learning solutions into applications.
 - Develop LLM-powered features such as chatbots, resume screening, summarization, and information extraction.
