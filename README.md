@@ -266,7 +266,7 @@ automatically on every push and pull request.
 
 We are looking for an AI Engineer to design, develop, and deploy intelligent applications powered by machine learning and large language models.
 
-### Responsibilities
+**Responsibilities**
 
 - Build and integrate AI and machine-learning solutions into applications.
 - Develop LLM-powered features such as chatbots, resume screening, summarization, and information extraction.
@@ -278,7 +278,7 @@ We are looking for an AI Engineer to design, develop, and deploy intelligent app
 - Monitor application performance, troubleshoot issues, and improve model quality.
 - Follow responsible AI practices, including privacy, security, fairness, and bias reduction.
 
-## Requirements
+**Requirements**
 
 - Bachelor’s degree in Computer Science, Artificial Intelligence, Data Science, or a related field.
 - Strong programming skills in Python and familiarity with JavaScript or TypeScript.
@@ -288,7 +288,7 @@ We are looking for an AI Engineer to design, develop, and deploy intelligent app
 - Understanding of prompt engineering, embeddings, vector databases, and retrieval-augmented generation.
 - Strong analytical, communication, and problem-solving skills.
 
-## Preferred Qualifications
+**Preferred Qualifications**
 
 - Experience deploying AI applications to production.
 - Knowledge of Docker, CI/CD, and cloud services.
@@ -296,7 +296,7 @@ We are looking for an AI Engineer to design, develop, and deploy intelligent app
 - Familiarity with React or another modern frontend framework.
 - Previous experience building document-processing or recruitment-related systems.
 
-## Example Success Measures
+**Example Success Measures**
 
 - Deliver reliable AI features that meet product requirements.
 - Improve model accuracy and response quality through testing and evaluation.
